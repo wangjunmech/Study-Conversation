@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>conversation note 对话笔记</title>
+	    <link href="./../third party/bootstrap-4.0.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script type="text/javascript" src="./third party/jquery-v3.3.1.js"></script>
+    <script type="text/javascript" src="./third party/bootstrap-4.0.0/dist/js/bootstrap.js"></script>
+    <style type="text/css">
+    	body{
+    		margin: 3%;
+    	}
+    	#listcontrol{
+    		margin-bottom:10px;
+    	}
+    	#subAns,#addsentence {
+    		/*border-radius: 40%;*/
+    		margin-left: 40%;
+    		width: 30%;
+    		line-height: 60px;
+    	}
+    	#addsentence {
+    		border-radius: 40px 40px;
+
+    	}
+    	.noteList{
+    		width: 100%;
+    		/*margin: 5px auto;*/
+    		display: none;
+    		height: auto;
+    		padding: 5px;
+    		margin:5px;
+    		background:#ACFF94;/*列表背景*/
+    		border: 1px solid red;
+    		float: left;
+    		border-radius:10px 10px;
+    		word-wrap: break-word;
+    		word-break: break-all;
+    		white-space:normal;
+    		/*white-space: pre-line;*/
+    	}    	
+    	.list {
+    		width: auto;
+    		height: auto;
+    		padding: 5px;
+    		float:left;
+
+    		margin:5px;
+    		background:#aef;
+    		border: 1px solid blue;
+    		display: inline;
+    		border-radius:10px 10px;
+    	} 	
+    	.list:hover{
+    		background:pink;
+    		border: 1px solid red;
+    		margin: 5px;
+    	}
+    	.idSpan{
+    		font-size: 20px;
+    		color:red;
+    	}
+    	#loading,#loading2{
+    		z-index: 9999;
+    		align-content: center;
+    		text-align: center;    	
+    	   	}
+    	img{ width:20%; 
+    		height:auto; 
+    		max-width:100%; 
+    		max-height:100%;
+    		align-self: center;
+    		margin: 0 auto;
+    	}
+    	#listcontrol{
+    		border: 5px red dashed;
+    	}
+    	.roleinput{
+    		/*min-width: 10px;*/
+    		/*max-width: 110px;*/
+    		width:60px;
+    	}
+    	a {
+    		text-decoration: none;    		
+    	}
+
+    </style>
+</head>
+<body>
+
+<div class="btn col-lg-12">
+<button type="button" id='listcontrol' class="btn-lg btn-warning btn-block ">对话笔记列表</button>
+<div class="noteList"></div>
+
+</div>
+<div id="loading" ></div>
+<div class="form-group">
+    <span for="lessonId" class="col-sm-2 col-form-label">Lesson Number/课程编号</span>
+      <input type="text" class="form-control" id="lessonId" placeholder="课程编号">
+    <span for="subject" class="col-sm-2 col-form-label">contents-subject/内容主题</span>
+      <input type="text" class="form-control" id="subject" placeholder="内容主题">
+    <label for="example" class="col-sm-2 col-form-label">sentences input/句型输入</label>
+
+    <div class="col-sm-12" >
+		    <div id="sentences">
+			    <div class="input-group mb-4">
+				  <div class="input-group-prepend">
+				    <span class="input-group-text roleswitch" style="background: #faa"　>换角色</span>
+	    			  <input type="text" id='roletest' class="input-group-text roleinput" placeholder="role" onkeypress="autowidth()" style="position:relative;float: right">
+				  </div>
+				  <input type="text" class="form-control sentenceinput" placeholder="please put stence!" aria-label="Username">
+				</div>
+		    </div>
+	           <div style="margin:20px" id="ss">  
+
+			   </div> 
+	                
+		       <button type="submit" class="btn btn-primary" id="addsentence"　 >Add sentence example/追加句型</button>
+			   </div>
+    </div>
+</div>
+
+  <hr>
+
+
+<div id="loading2" ></div>
+  <button type="button" class="btn btn-danger" id="subAns" >Submit lesson/提交笔记</button>
+	<script type="text/javascript">
+		//数组不复复添加元素
+Array.prototype.pushNoRepeat = function(){ 
+	for(var i=0; i<arguments.length; i++){ 
+		var ele = arguments[i]; 
+		if(this.indexOf(ele) == -1){ 
+			this.push(ele);
+			return this.length; 
+		}else{
+			return -1;
+		} 
+		} 
+		return this.indexOf(ele);
+	};
+
+
+		// 输入框长度自适应
+function autowidth() {
+	var testLength = document.getElementById('roletest').value.length;
+	if(testLength<5){
+		testLength=50+testLength*10;
+	}else{
+		testLength=30+testLength*10;
+	}
+	$("#roletest").css('width', testLength + 'px')
+}
+function autow(target) {
+	// console.log(' =  =  =  =  = >>>>');
+	// console.log(this)//window
+	// console.log(target)//
+	var testLength = target.value.length;
+	if(testLength<5){
+		testLength=50+testLength*10;
+	}else{
+		testLength=30+testLength*10;
+	}
+	$(target).css('width', testLength + 'px');//把js对象包装为jquery对象要用$()
+}
+
+// 数组无数查找函数，返回查找元素在数组中的位置，找不到返回-1
+function indexOf(item){
+	return  this.indexOf(item);
+	}
+
+
+		'use strict';
+// ***************声明全局变量
+	let STime = new Date();//程序开始时间
+	var startTime = STime.getTime();
+
+	//句型输入处理
+	var roleswitch = document.getElementsByClassName('roleswitch');
+	var roleinput = document.getElementsByClassName('roleinput');
+	var sentenceinput = document.getElementsByClassName('sentenceinput');
+	var rolenamearr=[];	
+
+// 生成随机颜色的函数
+function bg1(){
+return '#'+Math.floor(Math.random()*256).toString(10);
+}
+function bg2(){
+return '#'+Math.floor(Math.random()*0xffffff).toString(16);
+}
+function bg3(){
+var r=Math.floor(Math.random()*256);
+var g=Math.floor(Math.random()*256);
+var b=Math.floor(Math.random()*256);
+return "rgb("+r+','+g+','+b+")";//所有方法的拼接都可以用ES6新特性`其他字符串{$变量名}`替换
+}
+
+
+	// console.log(roleswitch);
+
+
+
+	var addsentence = document.getElementById('addsentence');
+	var addQuestion = document.getElementById('addQuestion');
+	var sentences = document.getElementById('sentences');
+	var subAns = document.getElementById('subAns');
+	// var questionList = document.getElementsByClassName('questionList')[0];
+	var ss = document.getElementById('ss');
+	var listcontrol = document.getElementById('listcontrol');
+	var listshow = 0;//列表显示状态
+	var listdone = 0;//列表是否已获取
+	var rolenamearr
+	var sentenceNum;
+	var roleNum;
+listcontrol.onclick = function(){
+		var noteList = document.getElementsByClassName('noteList')[0];
+		// alert('888888888888888888');
+		if(!listdone){
+            $.ajax({
+	 			url:'SNAjaxPHP/lesson_count.php?'+Math.random(),
+	 			data:{},
+	 			type:'post',
+	 			traditional: true,        	 
+		        	beforeSend:function(XMLHttpRequest){   
+		         	 $("#loading").html("<img src='SNAjaxPHP/loading.gif'/>"); //在后台返回success之前显示loading图标  
+		       			 },    
+
+	 			success:function(data){  
+	 				listdone=1;//设置列表已获取
+	 				// console.log(data);
+	 				var data=JSON.parse(data);
+	 				var num = (data.length);//课程列表个数
+ 					var obj = JSON.parse(data[0].notestr);
+
+	 				var getId=(obj.lessonId);
+	 				// alert('xxxxxxxsssssssssss');
+	 				for(let i=0;i<num;i++){
+	 					var obj = JSON.parse(data[i].notestr);
+
+	 					var oDiv= document.createElement('div');
+	 					oDiv.addEventListener("click", function(){
+	 						// 处理课程点击
+			 				var thisLesson = this.firstElementChild.innerText;
+	 						var sdiv = document.createElement('div');
+	 						sdiv.innerText=this.index;
+
+	 						 var lessonWindow=window.open('SNAjaxPHP/readlesson.php?id='+thisLesson,'_blank');	
+						    // this.firstChild.innerText += this.index;
+						});
+	 					var idSpan= document.createElement('span');
+	 					var dotSpan= document.createElement('span');
+	 					var tSpan= document.createElement('span');
+	 					oDiv.index=i+1;//給div設置index属性
+	 					oDiv.className="list";
+	 					idSpan.className="idSpan";
+
+	 					idSpan.innerText = obj.lessonId;
+	 					dotSpan.innerText = '. ';
+	 					tSpan.innerText = obj.subject;
+	 					oDiv.appendChild(idSpan);
+	 					oDiv.appendChild(dotSpan);
+	 					oDiv.appendChild(tSpan);
+	 					noteList.appendChild(oDiv);
+	 				}
+                $("#loading").empty(); //ajax返回成功，清除loading图标
+	 			}
+		 	});
+		 	}
+		// console.log(noteList)
+		if(listshow==0){
+				noteList.style.display='block';
+				listshow=1;
+			}else{
+				noteList.style.display='none';
+				listshow=0;
+			}
+	}
+
+		// var subAns = document.getElementById('subAns');
+		// var inputs = querySelector('inputSubject')
+
+	addsentence.onclick=function(){
+		// alert('点击添加句子');//
+		let elelment=sentences.children[0].cloneNode(true);//克隆的节点元素
+			sentenceNum=sentences.children.length;//例句元素数量，每点击一次添加按钮元素加１
+		//自动处理Role输入
+		// console.log(sentenceNum+'=======>总条数！');
+		for(let i=0;i<sentenceNum;i++){
+		//循环检查已有的元素角色输入框的内容
+			var opt = sentences.children[i].getElementsByClassName('roleinput')[0].value;
+		//如果没有输入则不计入数组
+			if(opt){				
+			rolenamearr.pushNoRepeat(opt);//角色输入框的内容逐一放入数组
+			}
+		}
+
+
+
+		// console.log(rolenamearr);//输出数组看看	
+		var roleswitchTmp=elelment.getElementsByClassName('roleswitch')[0];//新添加的处理换角色按钮，以改变克隆的输入框内容
+		var roleinputTmp=elelment.getElementsByClassName('roleinput')[0];//新添加的角色输入框
+
+		//角色输入框长度根据输入自动处理
+
+		roleinputTmp.addEventListener("keypress",function(){
+			// alert('xxxxxxxx');
+			autow(this);
+		});//角色输入框长度根据输入自动处理
+		// console.log(roleinputTmp);
+		
+		roleswitchTmp.index=sentenceNum;
+		roleinputTmp.index=sentenceNum;
+		var lastname=roleinput[sentenceNum-1].value;
+		// var keyname=roleinputTmp.value;//keyname用于赋值给新点击添加的角色输入框，默认给第０个元素的值
+		var keyname;//keyname用于赋值给新点击添加的角色输入框，默认给最后一个元素的值
+
+
+
+		// 处理换角色按钮点击事件，以改变输入框内容
+		roleswitchTmp.addEventListener('click',	function(){
+			// this.style.background='yellow';
+			this.style.background=bg3();
+			// alert(this.index);
+			var inputNow = sentences.children[this.index].getElementsByClassName('roleinput')[0];//当前角色输入框的值
+			var valNow = inputNow.value;//当前角色输入框的值
+			var posNow = rolenamearr.indexOf(valNow);//当前值在数组中所处位置
+			if(posNow+1 < rolenamearr.length){				
+			inputNow.value=rolenamearr[posNow+1];
+			// console.log('posNow=='+posNow)
+			console.log(rolenamearr.length+'======'+posNow+'======'+rolenamearr[posNow+1])
+			}else{
+			inputNow.value=rolenamearr[0];
+			// // console.log(rolenamearr[1])
+			}
+		})
+
+
+		// 计算角色输入框自动轮换角色
+
+		var flag = rolenamearr.indexOf(lastname);
+		var pos = sentenceNum % rolenamearr.length;
+		keyname = rolenamearr[pos];
+
+
+
+		roleinputTmp.value=keyname?keyname:null//设置角色输入框内容
+		elelment.getElementsByClassName('sentenceinput')[0].value='';//例句输入框内容清空
+		sentences.appendChild(elelment);
+
+	}
+
+	subAns.onclick=function(){
+		  let r = confirm('确定要提交课程笔记吗？');
+		  if (r!=true) return;
+		  var listdone=0;		    
+		  var lessonId = document.getElementById('lessonId').value;
+		  if(!lessonId){
+		  	alert('课程编号必须填写！');
+		  	return;
+		  }
+		  // this.style.background='yellow';
+		  subAns.style.visibility='hidden';//提交数据后先把按钮隐藏避免重复点击多次写入数据库，在数据库写入完成再显示出来并显示为绿色
+		  // subAns.style.visibility='visible';
+
+		  var subject = document.getElementById('subject').value;
+		  // var sArr=[];//一维数组仅处理例句
+		  var sentencesArr = [];//二维数组处理角色和例句
+	  	　　let ETime = new Date();//程序开始时间
+
+		  var endTime = ETime.getTime();
+		  var timespend = parseInt((endTime-startTime)/1000/60);//笔记用时花了多少分鈡！
+
+
+		  // // *****************************//一维数组仅处理例句,处理例句添加到数组中
+		  // for( let i=0;i<sentences.children.length;i++){
+		  // 	sArr.push(sentences.children[i].getElementsByClassName('sentenceinput')[0].value);
+		  // } 
+		  //*****************************////二维数组处理角色和例句,处理例句带上角色
+  		  for( let i=0;i<sentences.children.length;i++){
+		  	var s = [];
+		  	 	s.push(sentences.children[i].getElementsByClassName('roleinput')[0].value);
+		  	 	s.push(sentences.children[i].getElementsByClassName('sentenceinput')[0].value);
+			  	sentencesArr.push(s);	
+
+
+			  	rolenamearr.pushNoRepeat(sentences.children[i].getElementsByClassName('roleinput')[0].value);
+		  }
+
+
+
+		  roleNum = rolenamearr.length;
+		  // console.log(roleNum+'>>')
+
+		  var dataObj = {
+			  lessonId,
+			  subject,
+			  sentencesArr,
+			  timespend,
+			  roleNum
+		  }
+		  // console.log(dataObj);
+		  // console.log(sArr);
+		  // console.log(sentencesArr);
+
+
+// //第一个异步任务
+    function check_lessonId(){
+        return new Promise(function(resolve, reject){
+            //Ajax发送课程ID数据，后台进行数据库检查并返回回相应课程ID的记录条数;
+            $.ajax({
+	 			url:'SNAjaxPHP/record_check.php?'+Math.random(),
+	 			data:{'lessonId':lessonId},
+	 			type:'post',
+	 			timeout:10000,
+	 			traditional: true,
+
+	 			success:function(data){  
+	 				if(!parseInt(data)){
+	 					// alert('检查lessonID不存在，可向表中插入数据');
+			            resolve(1);
+	 				}else{
+	 					alert('检查课程编号lessonID已存在了，需要输入别的课程ID!!!');
+			            resolve(0);
+					 　　 subAns.style.visibility='visible';//显示提交按钮
+					    subAns.style.background='#DC3545';
+					    //subAns.style.background='red';
+	 				}
+	 			},
+	 			complete : function(XMLHttpRequest,status){ //请求完成后最终执行参数
+				　　　　if(status=='timeout'){//超时,status还有success,error等值的情况
+				　　　　　  alert("连接请求超时!!!!!!!!!!!!请重新提交尝试!");
+						subAns.style.visibility='visible';
+						$("#loading2").empty();//清除loading图标
+				　　　　}
+				　　　　if(status=='success'){//超时,status还有success,error等值的情况
+				// 　　　　　  alert("后台有返回说明完成请求,但请求是否成功后台才知道!!!!!!!!!");
+				　　　　}
+				}
+		 	});
+
+
+        });
+    }
+//     //第二个异步任务
+    function write_data(flag){
+    	if(flag){
+        return new Promise(function(resolve, reject){
+            //根据前一个任务返回结果来判断是否要执行写入异步操作
+            
+            // console.log('写入许可OK,Ajax发送数据到后台写入！');
+			 		$.ajax({
+				 			url:'SNAjaxPHP/writenotes.php?'+Math.random(),
+				 			// url:'SNAjaxPHP/writeconv.php?'+Math.random(),
+				 			data:{dataObj:JSON.stringify(dataObj)},
+				 			type:'post',
+			 			 　　 timeout : 10000, //超时时间设置，单位毫秒
+				 			traditional: true,
+				        	beforeSend:function(XMLHttpRequest){   
+					         	 $("#loading2").html("<img src='SNAjaxPHP/loading.gif'/>"); //在后台返回success之前显示loading图标  
+			       			 },  
+				 			success:function(data){  
+				 			// (data) ? alert("课程笔记写入数据库完成！本课笔记花了 "+timespend+" 分钟,请再接再励！") : alert("课程笔记写入失败！")	
+				 			// console.log(' =  =  =  =  =  =  =  = ');
+				 			var pos = data.substring(0,1);
+				 			console.log(data);
+				 			if(pos == "<"){
+					 			alert("网络联接有问题或数据库错误,请检查网络连接再试或向管理员询求帮助!!");
+								subAns.style.visibility='visible';
+								$("#loading2").empty();//清除loading图标
+					 			return;
+				 			}
+				 			// console.log(data);
+				 			// console.log(typeof(data));
+				 			// console.log('-------------------');
+				 			if(data){
+				 				alert("课程笔记写入数据库完成！本课笔记花了 "+timespend+" 分钟,请再接再励！");
+						 		// document.execCommand('Refresh'); 
+						 		 // history.go(0)
+						 		window.location.reload();
+								// subAns.style.visibility='visible';
+		 						// subAns.style.background='green';
+				 			}else{
+				 			 alert("课程笔记写入失败！");
+				 			 subAns.value = 'resubmit/重新提交尝试';
+ 							 subAns.style.visibility='visible';
+
+				 			}
+
+	 			            resolve(1);
+	 			            STime = new Date();
+	 			            $("#loading2").empty(); //ajax返回成功，清除loading图标
+
+				 			},
+				 			complete : function(XMLHttpRequest,status){ //请求完成后最终执行参数
+							　　　　if(status=='timeout'){//超时,status还有success,error等值的情况
+							　　　　　  alert("连接请求超时!!!!!!!!!!!!请重新提交尝试!");
+									subAns.style.visibility='visible';
+									$("#loading2").empty();//清除loading图标
+							　　　　}
+							　　　　if(status=='success'){//超时,status还有success,error等值的情况
+							// 　　　　　  alert("后台有返回说明完成请求,但请求是否成功后台才知道!!!!!!!!!");
+							　　　　}
+							}
+				 	})
+	 	
+
+        });
+            }else{
+            console.log('未得到写入许可');
+
+	}
+    }
+
+//     //连续调用
+    check_lessonId().then(function(data){
+
+        return write_data(data);
+    }).then(function(data){
+        return 1;
+    }).then(function(data){
+        // console.log(data);
+    }).catch(function(e){
+        //rejected的状态将直接跳到catch里，剩下的调用不会再继续
+        console.log(e);
+    });
+
+ 
+
+    // return false;
+
+    //处理提交不成功不返回消息的问题
+setTimeout(function (){
+	subAns.style.visibility='visible';
+	subAns.style.background='red';
+},20000);	
+
+};
+
+
+//////////
+
+
+
+
+	</script>
+</body>
+</html>
+
